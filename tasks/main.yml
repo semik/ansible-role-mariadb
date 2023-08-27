@@ -1,0 +1,28 @@
+---
+- name: install mariadb
+  apt:
+    name:
+      - mariadb-server
+      - python3-pymysql
+    cache_valid_time: "{{ apt_cache_valid_time }}"
+    update_cache: yes
+    state: present
+  notify: restart apache2
+
+- name: create all neded databases
+  community.mysql.mysql_db:
+    name: "{{ item.db }}"
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+  loop:
+    "{{ mariadb }}"
+
+- name: create all needed users and grand them privileges
+  community.mysql.mysql_user:
+    state: present
+    name: "{{ item.user }}"
+    password: "{{ item.password }}"
+    priv: "{{ item.db + '.*:ALL' }}"
+    login_unix_socket: /run/mysqld/mysqld.sock
+  loop:
+    "{{ mariadb }}"
